@@ -1,9 +1,10 @@
 const express = require('express');
-const fetch = require('node-fetch'); // O usa global.fetch dependiendo de tu versión de Node
+const fetch = require('node-fetch');
 const app = express();
 
 app.use(express.json());
 
+// Asegúrate de que la ruta sea '/crear-parte' (para que coincida con tu Roblox) o cámbiala en Roblox
 app.post('/crear-parte', async (req, res) => {
     const userPrompt = req.body.prompt;
 
@@ -21,16 +22,10 @@ app.post('/crear-parte', async (req, res) => {
             body: JSON.stringify({
                 model: 'gpt-3.5-turbo',
                 messages: [
-                    { 
-                        role: 'system', 
-                        content: 'Eres un asistente de IA útil integrado en un juego de Roblox. Responde de forma clara, directa y concisa a lo que el usuario te pida.' 
-                    },
-                    { 
-                        role: 'user', 
-                        content: userPrompt 
-                    }
+                    { role: 'system', content: 'Eres un asistente útil en Roblox.' },
+                    { role: 'user', content: userPrompt }
                 ],
-                max_tokens: 300
+                max_tokens: 250
             })
         });
 
@@ -38,19 +33,18 @@ app.post('/crear-parte', async (req, res) => {
 
         if (data.choices && data.choices.length > 0) {
             const aiReply = data.choices[0].message.content;
-            // Enviamos la respuesta estructurada que espera el script de Roblox
             res.json({ reply: aiReply });
         } else {
-            res.status(500).json({ error: 'No se pudo obtener respuesta de OpenAI', details: data });
+            res.status(500).json({ error: 'Error en OpenAI', details: data });
         }
 
     } catch (error) {
-        console.error('Error en el servidor:', error);
-        res.status(500).json({ error: 'Error interno del servidor proxy' });
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Error en el servidor proxy' });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor proxy corriendo en el puerto ${PORT}`);
+    console.log(`Servidor corriendo en puerto ${PORT}`);
 });
