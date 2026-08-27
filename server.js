@@ -1,53 +1,56 @@
 const express = require('express');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); // O usa global.fetch dependiendo de tu versión de Node
 const app = express();
 
 app.use(express.json());
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
 app.post('/crear-parte', async (req, res) => {
-    const promptUsuario = req.body.prompt;
+    const userPrompt = req.body.prompt;
 
-    if (!promptUsuario) {
-        return res.status(400).json({ error: "Falta el prompt" });
+    if (!userPrompt) {
+        return res.status(400).json({ error: 'Falta el prompt' });
     }
 
     try {
-        const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${OPENAI_API_KEY}`
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
             },
             body: JSON.stringify({
-                model: "gpt-3.5-turbo",
+                model: 'gpt-3.5-turbo',
                 messages: [
-                    {
-                        role: "system", 
-                        content: "Eres un asistente de Roblox. Responde estrictamente con un JSON plano que contenga: SizeX, SizeY, SizeZ, PosX, PosY, PosZ, ColorR, ColorG, ColorB. Sin texto extra."
+                    { 
+                        role: 'system', 
+                        content: 'Eres un asistente de IA útil integrado en un juego de Roblox. Responde de forma clara, directa y concisa a lo que el usuario te pida.' 
                     },
-                    {
-                        role: "user", 
-                        content: promptUsuario
+                    { 
+                        role: 'user', 
+                        content: userPrompt 
                     }
                 ],
-                temperature: 0.7
+                max_tokens: 300
             })
         });
 
-        const data = await openaiResponse.json();
-        const contenidoIA = data.choices[0].message.content;
-        
-        const jsonParte = JSON.parse(contenidoIA);
-        res.json(jsonParte);
+        const data = await response.json();
+
+        if (data.choices && data.choices.length > 0) {
+            const aiReply = data.choices[0].message.content;
+            // Enviamos la respuesta estructurada que espera el script de Roblox
+            res.json({ reply: aiReply });
+        } else {
+            res.status(500).json({ error: 'No se pudo obtener respuesta de OpenAI', details: data });
+        }
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error al conectar con OpenAI" });
+        console.error('Error en el servidor:', error);
+        res.status(500).json({ error: 'Error interno del servidor proxy' });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
-
+app.listen(PORT, () => {
+    console.log(`Servidor proxy corriendo en el puerto ${PORT}`);
+});
